@@ -815,8 +815,10 @@ if (`"`endvars'"'!="") local lnsigv lnsigw
 	local title Stoc. frontier model(SF-BC1995)
 local lnsigv lnsigv
 if (`"`endvars'"'!="") local lnsigv lnsigw
+
+local lfd0 = cond("`epost'"=="","lf","d0")
 //mata mata describe
-	ml model lf sfbc`epost'() (Frontier: `yvar'= `wxvars2' `xvars', `noconstant') ///
+	ml model `lfd0' sfbc`epost'() (Frontier: `yvar'= `wxvars2' `xvars', `noconstant') ///
 	 (Mu:`wmuvars2' `mu') (`lnsigv': `vhet') ///
 	 (lnsigu: `uhet') `etaterm' `surterm', nopreserve `cns' `mlmodelopt' title(`title')
 
@@ -1575,8 +1577,8 @@ end
 
 cap program drop checkupdate
 program define checkupdate
-local url1 https://raw.githubusercontent.com/kerrydu/sdsfe/main/
-local url2 https://gitee.com/kerrydu/sdsfe/raw/main/
+local url1 https://raw.githubusercontent.com/kerrydu/sdsfe/main/ado
+local url2 https://gitee.com/kerrydu/sdsfe/raw/main/ado
 if `"$gitee"' != ""{
 	cap mata: vfile = cat(`"`url2'/`0'.ado"')
 	if _rc exit
