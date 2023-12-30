@@ -379,8 +379,10 @@ if (`"`endvars'"'!="") local lnsigv lnsigw
             (Frontier:`yvar' =  `wxvars2' `xvars',`noconstant') ///
             (Mu: `wmuvars2' `mu') (`lnsigv':`vhet') (lnsigu:`uhet')   ///
 	        (Wy:) `etaterm' `surterm', nopreserve `cns' `mlmodelopt' title(`title')
-
-	
+	local f_const = cond("`noconstant'"!="","","constant") 
+	local nvarsinfrontier: word count `wxvars2' `xvars' `f_const'
+	gettoken pmu:mu, p(",")
+	local pvarsinmu: word count `wxvars2' `xvars' `f_const' `wmuvars2' `pmu' 
 	if("`initial'"=="" & "`delve'"!="") { 
 		ml init b0,copy
 	}
@@ -451,18 +453,18 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
 		local varnames: colnames `bml'
 		mata: varnames=tokens(st_local("varnames"))
 	foreach v in `mex'{
-		mata: k = select(1..length(varnames),varnames:==`"`v'"')
-		mata: k1 = k[1]
-		mata: k = select(1..length(varnames),varnames:==`"Wx_`v'"')
+		mata: k = select(1..`nvarsinfrontier',varnames[1..`nvarsinfrontier']:==`"`v'"')
+		mata: k1 = k
+		mata: k = select(1..`nvarsinfrontier',varnames[1..`nvarsinfrontier']:==`"Wx_`v'"')
 		mata: st_numscalar("kk",length(k))
 		if(kk>0){
-			mata: k2 = k[1]	
+			mata: k2 = k	
 			mata: k1 = k1, k2
 		}
 		mata: bx =  _b_ml[k1]
 		mata: rhocon = _b_ml[length(_b_ml)]
 		mata: k1 = k1, length(_b_ml)
-		if ("`wxmat'"==""){
+		if ("`wxmat'"==""| kk==0){
 		   mata: toteff = meff_sdsfbc(rhocon, bx, V0[k1,k1],  `T',  w_ina,  ///
                         dire=.,  indire=.)
 		}
@@ -478,18 +480,18 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
  }
  if("`meu'"!=""){
 	foreach v in `meu'{
-		mata: k = select(1..length(varnames),varnames:==`"`v'"')
-		mata: k1 = k[1]
-		mata: k = select(1..length(varnames),varnames:==`"Wu_`v'"')
+		mata: k = select((`nvarsinfrontier'+1)..`pvarsinmu',varnames[(`nvarsinfrontier'+1)..`pvarsinmu']:==`"`v'"')
+		mata: k1 = k
+		mata: k = select((`nvarsinfrontier'+1)..`pvarsinmu',varnames[(`nvarsinfrontier'+1)..`pvarsinmu']:==`"Wu_`v'"')
 		mata: st_numscalar("kk",length(k))
 		if(kk>0){
-			mata: k2 = k[1]	
+			mata: k2 = k	
 			mata: k1 = k1, k2
 		}
 		mata: bx =  _b_ml[k1]
 		mata: rhocon = _b_ml[length(_b_ml)]
 		mata: k1 = k1, length(_b_ml)
-		if (`"`wumat'"'==""){
+		if (`"`wumat'"'=="" | kk==0){
 		   mata: toteff = meff_sdsfbc(rhocon, bx, V0[k1,k1],  `T',  w_ina,  ///
                         dire=.,  indire=.)
 		}
@@ -1120,7 +1122,10 @@ if (`"`endvars'"'!="") local lnsigv lnsigw
             (Frontier:`yvar' =  `wxvars2' `xvars',`noconstant') ///
             (Mu: `wmuvars2' `mu') (`lnsigv':`vhet')(lnsigu: `uhet')   ///
 	        (Wy:) `etaterm' `surterm', nopreserve `cns' `mlmodelopt' title(`title')
-	
+	local f_const = cond("`noconstant'"!="","","constant") 
+	local nvarsinfrontier: word count `wxvars2' `xvars' `f_const'
+	gettoken pmu:mu, p(",")
+	local pvarsinmu: word count `wxvars2' `xvars' `f_const' `wmuvars2' `pmu' 	
 	
 	if("`initial'"=="" & "`delve'"!="") { 
 		ml init b0,copy
@@ -1194,18 +1199,18 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
 		local varnames: colnames `bml'
 		mata: varnames=tokens(st_local("varnames"))
 	foreach v in `mex'{
-		mata: k = select(1..length(varnames),varnames:==`"`v'"')
-		mata: k1 = k[1]
-		mata: k = select(1..length(varnames),varnames:==`"Wx_`v'"')
+		mata: k = select(1..`nvarsinfrontier',varnames[1..`nvarsinfrontier']:==`"`v'"')
+		mata: k1 = k
+		mata: k = select(1..`nvarsinfrontier',varnames[1..`nvarsinfrontier']:==`"Wx_`v'"')
 		mata: st_numscalar("kk",length(k))
 		if(kk>0){
-			mata: k2 = k[1]	
+			mata: k2 = k	
 			mata: k1 = k1, k2
 		}
 		mata: bx =  _b_ml[k1]
 		mata: rhocon = _b_ml[length(_b_ml)]
 		mata: k1 = k1, length(_b_ml)
-		if ("`wxmat'"==""){
+		if ("`wxmat'"=="" | kk==0){
 		   mata: toteff = meff_sdsfbc(rhocon, bx, V0[k1,k1],  `T',  w_ina,  ///
                         dire=.,  indire=.)
 		}
@@ -1219,20 +1224,20 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
 		mata: indiremat = indiremat \ indire 
 	}
  }
- if("`meu'"!=""){
+ if("`meu'"!="" ){
 	foreach v in `meu'{
-		mata: k = select(1..length(varnames),varnames:==`"`v'"')
-		mata: k1 = k[1]
-		mata: k = select(1..length(varnames),varnames:==`"Wu_`v'"')
+		mata: k = select((`nvarsinfrontier'+1)..`pvarsinmu',varnames[(`nvarsinfrontier'+1)..`pvarsinmu']:==`"`v'"')
+		mata: k1 = k
+		mata: k = select((`nvarsinfrontier'+1)..`pvarsinmu',varnames[(`nvarsinfrontier'+1)..`pvarsinmu']:==`"Wu_`v'"')
 		mata: st_numscalar("kk",length(k))
 		if(kk>0){
-			mata: k2 = k[1]	
+			mata: k2 = k	
 			mata: k1 = k1, k2
 		}
 		mata: bx =  _b_ml[k1]
 		mata: rhocon = _b_ml[length(_b_ml)]
 		mata: k1 = k1, length(_b_ml)
-		if ("`wumat'"==""){
+		if ("`wumat'"=="" | kk==0){
 		   mata: toteff = meff_sdsfbc(rhocon, bx, V0[k1,k1],  `T',  w_ina,  ///
                         dire=.,  indire=.)
 		}
