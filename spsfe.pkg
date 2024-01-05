@@ -1,0 +1,16 @@
+v 1
+d
+d Fitting spatial Durbin stochastic frontier models in Stata
+d
+
+f spsfe.ado 
+f spsfe.sthlp 
+f spsfe_p.ado 
+f lspsfe.mlib
+
+
+
+f spsfe1.dta 
+f spsfe2.dta 
+f w_ex1.mmat 
+f w_ex2.mmat 
