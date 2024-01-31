@@ -265,7 +265,8 @@ the production or cost efficiency variable via exp(-E[u|e]).
 
 {phang}
 {cmd:genwvars} generates the spatial Durbin and spatial lag terms in
-the specified model. 
+the specified model. It is required for the postestimation 
+when spatial dependence is included.
 
 
 {marker optionsversion}{...}
@@ -397,10 +398,6 @@ Stochastic Durbin production model {p_end}
 {synopt:{cmd:e(gradient)}}gradient vector{p_end}
 {synopt:{cmd:e(V)}}variance-covariance matrix of the estimators{p_end}
 
-{synoptset 20 tabbed}{...}
-{p2col 5 20 24 2: Functions}{p_end}
-{synopt:{cmd:e(sample)}}marks estimation sample{p_end}
-{p2colreset}{...}
 
 {marker acknowledgments}{...}
 {title:Acknowledgments}

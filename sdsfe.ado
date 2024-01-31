@@ -412,15 +412,30 @@ foreach v in `wuvars'{
    ereturn local cmdbase ml
    ereturn local cmdline `cmdline'
    ereturn local function = cond("`cost'"!="","cost","production")
-   qui _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+  // qui _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+
+//global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2)))    
+   global tranparametrs
+   Replay , `diopts'
+
+
+     di " "
+     di in gre "Note: rho = 1/(rmin+rmin*exp(Wy:_cons))+exp(Wy:_cons)/(rmax+rmax*exp(Wy:_cons)); "
+     di in gre "      where rmin and rmax are the minimum and maximum eigenvalues of sp matrix"
+	 di " "
+     di in gre "   ---convert the parameters to the original form---  "
+     di " "
+          di in smcl in gr abbrev("variable",12) _col(14) "{c |}" /*
+               */ _col(21) "Coef." _col(29) "Std. Err." _col(44) "t" /*
+               */ _col(49) "P>|t|" _col(59) "[95% Conf. Interval]"
+          di in smcl in gr "{hline 13}{c +}{hline 64}"
+		  _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+
    local rho = r(est)
    local rhose = r(se)
    ereturn scalar rho = `rho'
    ereturn scalar rho_se = `rhose' 
    ereturn local predict = "sdsfe_p"
-global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2)))    
-   
-   Replay , `diopts'
 
    if(`"`te'"'!=""){
 		tempname bml
@@ -1156,16 +1171,32 @@ foreach v in `wuvars'{
    ereturn local cmdbase ml
    ereturn local cmdline `cmdline'
    ereturn local function = cond("`cost'"!="","cost","production")
-   qui _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+  // qui _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+
+  ****************
+//global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))) 
+global tranparametrs
+
+   Replay , `diopts'
+
+     di " "
+     di in gre "Note: rho = 1/(rmin+rmin*exp(Wy:_cons))+exp(Wy:_cons)/(rmax+rmax*exp(Wy:_cons)); "
+     di in gre "      where rmin and rmax are the minimum and maximum eigenvalues of sp matrix"
+	 di " "
+     di in gre "   ---convert the parameters to the original form---  "
+     di " "
+          di in smcl in gr abbrev("variable",12) _col(14) "{c |}" /*
+               */ _col(21) "Coef." _col(29) "Std. Err." _col(44) "t" /*
+               */ _col(49) "P>|t|" _col(59) "[95% Conf. Interval]"
+          di in smcl in gr "{hline 13}{c +}{hline 64}"
+		  _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+		  
    local rho = r(est)
    local rhose = r(se)
    ereturn scalar rho = `rho'
    ereturn scalar rho_se = `rhose' 
    ereturn local predict = "sdsfe_p"
-  ****************
-global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))) 
 
-   Replay , `diopts'
 
    if(`"`te'"'!=""){
 		tempname bml
