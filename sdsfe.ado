@@ -423,7 +423,7 @@ foreach v in `wuvars'{
      di in gre "Note: rho = 1/(rmin+rmin*exp(Wy:_cons))+exp(Wy:_cons)/(rmax+rmax*exp(Wy:_cons)); "
      di in gre "      where rmin and rmax are the minimum and maximum eigenvalues of sp matrix"
 	 di " "
-     di in gre "   ---convert the parameters to the original form---  "
+     di in gre "   ---convert Wy:_cons to the original form---  "
      di " "
           di in smcl in gr abbrev("variable",12) _col(14) "{c |}" /*
                */ _col(21) "Coef." _col(29) "Std. Err." _col(44) "t" /*
@@ -1183,7 +1183,7 @@ global tranparametrs
      di in gre "Note: rho = 1/(rmin+rmin*exp(Wy:_cons))+exp(Wy:_cons)/(rmax+rmax*exp(Wy:_cons)); "
      di in gre "      where rmin and rmax are the minimum and maximum eigenvalues of sp matrix"
 	 di " "
-     di in gre "   ---convert the parameters to the original form---  "
+     di in gre "   ---convert Wy:_cons to the original form---  "
      di " "
           di in smcl in gr abbrev("variable",12) _col(14) "{c |}" /*
                */ _col(21) "Coef." _col(29) "Std. Err." _col(44) "t" /*
