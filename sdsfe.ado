@@ -537,7 +537,7 @@ display _n(2) in gr "Marginal effects are reported as follows."
 		else if (`nxx'==0 & `nuu'>0){
 		di "Note: The standard errors are estimated with the Delta method. The variables are all in the frontier function."
 		}
-    mata: totalemat =totalemat, ((totalemat[.,1]):/ totalemat[.,2]), 2*(1-normal(abs(totalemat[.,1]:/ totalemat[.,2])))
+    mata: totalemat =totalemat, ((totalemat[.,1]):/ totalemat[.,2]), 2*(normal(-abs(totalemat[.,1]:/ totalemat[.,2])))
 	mata: st_matrix("totaleff",totalemat)
 	foreach v in `mex' `meu'{
 		local rnames `rnames' `"`v'"'
@@ -556,7 +556,7 @@ display _n(2) in gr "Marginal effects are reported as follows."
 		dis _n in gr "Total marginal effects:"
 		matlist totaleff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 		
-    mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]),2*(1-normal(abs((diremat[.,1]):/diremat[.,2])))
+    mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]),2*(normal(-abs((diremat[.,1]):/diremat[.,2])))
 	mata: st_matrix("directeff",diremat)
     mat rownames directeff = `rnames'
 	mat colnames directeff = "Coeff" "se" "z" "P"	
@@ -564,7 +564,7 @@ display _n(2) in gr "Marginal effects are reported as follows."
 		dis _n in gr "Direct marginal effect:"
 		matlist directeff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 
-    mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],2*(1-normal(abs((indiremat[.,1]):/indiremat[.,2])))
+    mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],2*(normal(-abs((indiremat[.,1]):/indiremat[.,2])))
 	mata: st_matrix("indirecteff",indiremat)		
     mat rownames indirecteff = `rnames'
 	mat colnames indirecteff = "Coeff" "se" "z"	"P"
@@ -1302,7 +1302,7 @@ display _n(2) in gr "Marginal effects are reported as follows."
 		di "Note: The standard errors are estimated with the Delta method. The variables are all in the frontier function."
 		}
 
-    mata: totalemat =totalemat, ((totalemat[.,1]):/ totalemat[.,2]),  2*(1-normal(abs(totalemat[.,1]:/ totalemat[.,2])))
+    mata: totalemat =totalemat, ((totalemat[.,1]):/ totalemat[.,2]),  2*(normal(-abs(totalemat[.,1]:/ totalemat[.,2])))
 	mata: st_matrix("totaleff",totalemat)
 		foreach v in `mex' `meu'{
 		local rnames `rnames' `"`v'"'
@@ -1321,7 +1321,7 @@ display _n(2) in gr "Marginal effects are reported as follows."
 		dis _n in gr "Total marginal effects:"
 		matlist totaleff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 
-    mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]), 2*(1-normal(abs(totalemat[.,1]:/ totalemat[.,2])))
+    mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]), 2*(normal(-abs(totalemat[.,1]:/ totalemat[.,2])))
 	mata: st_matrix("directeff",diremat)
     mat rownames directeff = `rnames'
 	mat colnames directeff = "Coeff" "se" "z"	"P"
@@ -1329,7 +1329,7 @@ display _n(2) in gr "Marginal effects are reported as follows."
 		dis _n in gr "Direct marginal effect:"
 		matlist directeff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 	
-    mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],  2*(1-normal(abs(totalemat[.,1]:/ totalemat[.,2])))
+    mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],  2*(normal(-abs(totalemat[.,1]:/ totalemat[.,2])))
 	mata: st_matrix("indirecteff",indiremat)		
     mat rownames indirecteff = `rnames'
 	mat colnames indirecteff = "Coeff" "se" "z"	"P"
