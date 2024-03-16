@@ -1,4 +1,4 @@
-*! version 0.5, 9Mar2024
+*! version 0.6, 9Mar2024
 *! version 0.4, 7Nov2023
 * handling endogeneity
 *! version 0.32, 10 Oct 2023
@@ -372,7 +372,7 @@ if `"`endvars'"'!=""{
 	}
 
 
-	local title Spatial frontier model(SDSF_BC1995)
+local title Spatial frontier model(SDSF_BC1995)
 local lnsigv lnsigv
 if (`"`endvars'"'!="") local lnsigv lnsigw
 //mata mata describe
@@ -1321,7 +1321,7 @@ display _n(2) in gr "Marginal effects are reported as follows."
 		dis _n in gr "Total marginal effects:"
 		matlist totaleff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 
-    mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]), 2*(normal(-abs(totalemat[.,1]:/ totalemat[.,2])))
+    mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]), 2*(normal(-abs(diremat[.,1]:/ diremat[.,2])))
 	mata: st_matrix("directeff",diremat)
     mat rownames directeff = `rnames'
 	mat colnames directeff = "Coeff" "se" "z"	"P"
@@ -1329,7 +1329,7 @@ display _n(2) in gr "Marginal effects are reported as follows."
 		dis _n in gr "Direct marginal effect:"
 		matlist directeff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 	
-    mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],  2*(normal(-abs(totalemat[.,1]:/ totalemat[.,2])))
+    mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],  2*(normal(-abs(indiremat[.,1]:/indiremat[.,2])))
 	mata: st_matrix("indirecteff",indiremat)		
     mat rownames indirecteff = `rnames'
 	mat colnames indirecteff = "Coeff" "se" "z"	"P"

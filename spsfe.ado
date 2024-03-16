@@ -1,3 +1,7 @@
+*! version 0.2, 15Mar2024
+* by Kerry Du, kerrydu@xmu.edu.cn
+
+* todo  genweff // mata:genweff [I-rhoW]^(-1)
 capture program drop spsfe
 program define spsfe, eclass sortpreserve
 version 16
@@ -15,8 +19,8 @@ qui mata mata mlib index
 spsfe_vparse `0'
 local version `r(version)'
 if("`version'"!=""){
-	dis "The installed version of spsfe is `version'"
-	//checkupdate sdsfbc
+	dis "The installed version of sdsfe is `version'"
+	checkupdate spsfe
 	exit
 }
 
@@ -33,14 +37,16 @@ end
 
 program Estimate, eclass sortpreserve
 
-syntax varlist,  [INItial(name) NOCONstant NORMalize(string) ENDVars(varlist) iv(varlist) ///
-                   LEAVEout(varlist) te(name) GENWVARS mldisplay(string) WXMat(string)  ///
-                              DELmissing MLPLOT NOGraph MLMODELopt(string) level(real 95) COST  ///
-							  MLSEarch(string) MLMAXopt(string) DELVE CONSTraints(string)  ///
-							  lndetfull lndetmc(numlist >0 min=2 max=2) NOLOG  ///
-                              wxvars(varlist) vhet(varlist) uhet(string) /// 
-							   WMat(string) WYMat(string) ///
-							  mex(varlist) TRUNCate Id(varname) Time(varname) EXOGVars(varlist)] 
+syntax varlist,  [Id(varname) Time(varname) ///
+				  EXOGVars(varlist) ENDVars(varlist) iv(varlist) LEAVEout(varlist) ///
+				  WXMat(string) wxvars(varlist) WYMat(string) WMat(string) NORMalize(string) ///
+				  vhet(varlist) uhet(string) /// 
+                  NOCONstant COST TRUNCate ///
+				  GENWVARS mldisplay(string) NOLOG level(real 95) mex(varlist) ///
+				  DELmissing MLPLOT NOGraph ///
+				  INItial(name)  MLMODELopt(string)   ///
+				  MLSEarch(string) MLMAXopt(string) DELVE CONSTraints(string)  ///
+				  lndetfull lndetmc(numlist >0 min=2 max=2) /* undocumented options */ ] 
 
 							  
 local cmdline spsfe `0'
@@ -111,12 +117,8 @@ if "`checkendv'"!=""{
 }
 
 local endx: list  endvars - xvars
-local endu: list endx - muvars  
-local enduhet: list endu - uhetvars  
-if ("`enduhet'"!=""){
-	di as error "endogenous variables (`enduhet') are not specified in fronteir and inefficiency term."
-	erorr 198
-}
+local endu: list endx - uhetvars  
+
 global ivlist
 local iv: list uniq iv 
 //local iv: list iv - endvars
@@ -214,9 +216,9 @@ if "`time'"==""{
     qui keep `varlist' `wxvars' `id' `time' `uhetvars' `touse' `muvars' `vhetvars' `endvars' `iv'
     tempvar order0
     qui gen int `order0' =_n
-// sort 数据	
+// sort data	
 	qui issorted `time' `id'	
-	//tempvar time2
+//tempvar time2
 
 	qui distinct2 `time'
 	local T = r(ndistinct)	
@@ -317,7 +319,6 @@ if `"`endvars'"'!=""{
 }
 
 	if("`initial'"=="" & "`delve'"!="") { 
-		//di "`noconstant'"
 		//qui sfpanel `yvar' `xvars' `wxvars2',`noconstant' m(bc95) usigma(`uhet') vsigma(`vhet') emean(`wmuvars2' `mu') iterate(50) `cns'
 		ml model lf sfscal`dist'() (`yvar'=  `wxvars2' `xvars', `noconstant') (`vhet') (`uhet') `mu',  `cns'
 		qui ml max, iterate(50)
@@ -338,8 +339,8 @@ if `"`endvars'"'!=""{
 
 
 	
-	//local modeltype = cond("`wxvars'"=="","y-SAR","yx-SAR")
-	local title Spatial frontier model(SPSF_scaling)
+//local modeltype = cond("`wxvars'"=="","y-SAR","yx-SAR")
+local title Spatial frontier model(SPSF_scaling)
 
 local lnsigv lnsigv
 if (`"`endvars'"'!="") local lnsigv lnsigw
@@ -373,6 +374,9 @@ foreach v in `wuvars'{
 	local sendoutvar `sendoutvar' Wu_`v'
   }
 
+
+
+
    ereturn local cmd spsfe
    ereturn local spatialwvars wy_`yvar' `sendoutvar'
    ereturn local endvars `endvars'
@@ -381,18 +385,37 @@ foreach v in `wuvars'{
    ereturn local depvar `yvar'
    ereturn local function = cond("`cost'"!="","cost","production")
    ereturn local distribution=cond("`truncate'"=="","half normal","truncated normal") 
-   qui _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+   
+   global tranparametrs
+   Replay , `diopts'
+
+   //global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2)))  
+   //Replay , `diopts'
+
+     di " "
+     di in gre "Note: rho = 1/(rmin+rmin*exp(Wy:_cons))+exp(Wy:_cons)/(rmax+rmax*exp(Wy:_cons)); "
+     di in gre "      where rmin and rmax are the minimum and maximum eigenvalues of sp matrix"
+	 di " "
+     di in gre "   ---convert Wy:_cons to the original form---  "
+     di " "
+          di in smcl in gr abbrev("variable",12) _col(14) "{c |}" /*
+               */ _col(21) "Coef." _col(29) "Std. Err." _col(44) "t" /*
+               */ _col(49) "P>|t|" _col(59) "[95% Conf. Interval]"
+          di in smcl in gr "{hline 13}{c +}{hline 64}"
+		  _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+
+  
    local rho = r(est)
    local rhose = r(se)
    ereturn scalar rho = `rho'
    ereturn scalar rho_se = `rhose' 
-   ereturn local predict = "spsfe_p"
+   ereturn local predict = "spsfe_p"  
+  
+  tempvar uuhat
+  qui spsfepost `uuhat', yvar(`yvar') d(`distribution') `cost' endvars(`endvars') rho(`rho')
+  qui genweff `uuhat', aname(w_ina) tvar(`time2') 
 
-
-   global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2)))  
-   Replay , `diopts'
-
-
+/*
    if(`"`te'"'!=""){
 		tempname bml
 		mat `bml' = e(b)
@@ -405,7 +428,7 @@ foreach v in `wuvars'{
 		//important `endivs' = , "`endvars'","`iv'"
 		mata:_te_order=spsfscal`dist'`epost'_te(_b_ml,"`yvar'","`wxvars2' `xvars'","`vhet'","`uhet'","`noconstant'" `endivs')
    }	
-
+*/
 
 /////// total marginal effect, direct and indirect marginal effects
 
@@ -418,11 +441,7 @@ foreach v in `wuvars'{
 		mat `V0'  = e(V)
 		mata: _b_ml = st_matrix("`bml'")
 		mata:  rhocon = _b_ml[length(_b_ml)]
-		//mata: _b_ml[length(_b_ml)]= $rmin/(1+exp(rhocon))+$rmax*exp(rhocon)/(1+exp(rhocon))
 		mata: V0 = st_matrix("`V0'")
-		//mata: III = I(length(_b_ml))
-		//mata: III[length(_b_ml),length(_b_ml)] = exp(rhocon)*(($rmax-$rmin)/(1+exp(rhocon))^2)
-		//mata: V = III
 		local varnames: colnames `bml'
 		mata: varnames=tokens(st_local("varnames"))
 	foreach v in `mex'{
@@ -452,10 +471,10 @@ foreach v in `wuvars'{
 	}
  }
  
- if("`mex'"!="" | "`meu'"!=""){
+ if("`mex'"!="" ){
 	display _n(2) in gr "Marginal effects are reported as follows."
 	di "Note: The standard errors are estimated with the Delta method."
-    mata: totalemat =totalemat, ((totalemat[.,1]):/ totalemat[.,2]), (normal(-(totalemat[.,1]):/ totalemat[.,2]))
+    mata: totalemat =totalemat, ((totalemat[.,1]):/ totalemat[.,2]),2*normal(-abs((totalemat[.,1]):/totalemat[.,2]))
 	mata: st_matrix("totaleff",totalemat)
 	foreach v in `mex'{
 		local rnames `rnames' `"`v'"'
@@ -474,7 +493,7 @@ foreach v in `wuvars'{
 		dis _n in gr "Total marginal effects:"
 		matlist totaleff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 	
-		mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]),(normal(-((diremat[.,1]):/diremat[.,2])))
+		mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]),2*(normal(-abs((diremat[.,1]):/diremat[.,2])))
 		mata: st_matrix("directeff",diremat)
 		mat rownames directeff = `rnames'
 		mat colnames directeff = "Coeff" "se" "z" "P"	
@@ -482,7 +501,7 @@ foreach v in `wuvars'{
 		dis _n in gr "Direct marginal effect:"
 		matlist directeff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 
-		mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],(normal(-((indiremat[.,1]):/indiremat[.,2])))
+		mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],2*(normal(-abs((indiremat[.,1]):/indiremat[.,2])))
 		mata: st_matrix("indirecteff",indiremat)		
 		mat rownames indirecteff = `rnames'
 		mat colnames indirecteff = "Coeff" "se" "z"	"P"
@@ -504,6 +523,13 @@ foreach v in `wuvars'{
 		qui gen double Wy_`yvar'=.
 		mata: getdatafmata(__wy__,_order_0,"Wy_`yvar'")
 		label var Wy_`yvar'  "Wy*`yvar'"
+		qui gen double __u_sp__ = .
+		mata: getdatafmata(__u_sp__,_order_0,"__u_sp__")
+		qui gen double __dir_u_sp__ = .
+		label var __dir_u_sp__ "direct inefficiency component"
+		mata: getdatafmata(__dir_u_sp__,_order_0,"__dir_u_sp__")
+		qui gen double __indir_u_sp__ = __u_sp__ - __dir_u_sp__
+		label var _indir_u_sp__ "indirect inefficiency component"
 	}
 
   	if(`"`wxvars'"'!=""&"`genwvars'"!=""){
@@ -515,14 +541,9 @@ foreach v in `wuvars'{
 	  mata: getdatafmata(_order_wx,_order_0,"`wxall'")
       cap mata mata drop  _order_wx
 
-	}  
+	}
 
-   if(`"`te'"'!=""){
-		qui gen double `te' = .
-		label var `te' "technical efficiency"
-		mata: getdatafmata(_te_order,_order_0,"`te'")
-		cap mata mata drop  _te_order		
-   }  	
+ 	
    	if(`nummissing'>0){
 		di "Missing values found"
 		di "The regression sample recorded by variable __e_sample__"
@@ -541,13 +562,17 @@ end
 cap program drop spsfe01
 program spsfe01, eclass sortpreserve
 
-syntax varlist,  [INItial(name) NOCONstant NORMalize(string) mex(varlist)  ///
-                te(name) GENWVARS mldisplay(string) WXMat(string)  ///
-                DELmissing MLPLOT NOGraph MLMODELopt(string) level(real 95) COST  ///
-				MLSEarch(string) MLMAXopt(string) DELVE CONSTraints(string)  ///
-				lndetfull lndetmc(numlist >0 min=2 max=2) NOLOG  vhet(string) ///
-                wxvars(varlist) Id(varname)  Time(varname) uhet(string) TRUNCate /// 
-				LEAVEout(varlist) ENDVars(varlist) iv(varlist) EXOGVars(varlist)] 
+syntax varlist,  [Id(varname) Time(varname) ///
+				  EXOGVars(varlist) ENDVars(varlist) iv(varlist) LEAVEout(varlist) ///
+				  WXMat(string) wxvars(varlist) NORMalize(string) ///
+				  vhet(varlist) uhet(string) /// 
+                  NOCONstant COST TRUNCate ///
+				  GENWVARS mldisplay(string) NOLOG level(real 95) mex(varlist) ///
+				  DELmissing MLPLOT NOGraph ///
+				  INItial(name)  MLMODELopt(string)   ///
+				  MLSEarch(string) MLMAXopt(string) DELVE ///
+				  CONSTraints(string)  ///
+				  lndetfull lndetmc(numlist >0 min=2 max=2) /* undocumented options */ ] 				
 
 if ("`wxvars'"!="" & "`wxmat'"==""){
 	di as error "wxvars() should be combined with wxmat()"
@@ -557,7 +582,6 @@ if ("`wxvars'"=="" & "`wxmat'"!=""){
 	di as error "wxmat() should be combined with wxvars()"
 	error 198
 }
-
 
 
 ///////////////////////////////////////////////////////////////////
@@ -611,10 +635,9 @@ if ("`time'"==""){
     qui keep `varlist' `wxvars' `id' `time' `uhetvars' `touse' `muvars' `vhetvars' `iv' `endvars'
     tempvar order0
     qui gen int `order0' =_n
-// sort 数据	
+    // sort data	
 	qui issorted `time' `id'	
 	//tempvar time2
-
 	qui distinct2 `time'
 	local T = r(ndistinct)	
 //mata mata describe
@@ -686,9 +709,6 @@ else{
 		global end2 "Instrumental variables: `iv'"		
 	}	
 
-
-
-    //di "`cost'"
 	if ("`cost'"!=""){
 		mata: _cost = -1
 	} 
@@ -716,10 +736,8 @@ else{
 	}
 
 
-
-
-	//local modeltype = cond("`wxvars'"=="","y-SAR","yx-SAR")
-	local title Stoc. frontier model(SF_scaling)
+//local modeltype = cond("`wxvars'"=="","y-SAR","yx-SAR")
+local title Stoc. frontier model(SF_scaling)
 
 local lnsigv lnsigv
 if (`"`endvars'"'!="") local lnsigv lnsigw
@@ -738,7 +756,7 @@ local lfd0 = cond("`epost'"=="","lf","d0")
    local mlmaxopt: list uniq mlmaxopt   
    `nolog' ml max, `mlmaxopt' 
 
-   ereturn local cmd spsfbc
+   ereturn local cmd spsfe
    ereturn local endvars `endvars'
    ereturn local cmdbase ml
    ereturn local cmdline `cmdline'
@@ -746,20 +764,7 @@ local lfd0 = cond("`epost'"=="","lf","d0")
    ereturn local function = cond("`cost'"!="","cost","production")
    ereturn local distribution=cond("`truncate'"=="","half normal","truncated normal")  
    ereturn local predict = "spsfe_p"  
-   Replay , `diopts'
-
-
-   if(`"`te'"'!=""){
-		tempname bml
-		mat `bml' = e(b)
-		mata: _b_ml = st_matrix("`bml'")	
-	    local nx: word count `xvars' `wxvars2'
-		local nz: word count `uhet'
-		if("`noconstant'"=="") local noconstant constant
-		if "`vhet'"=="" local vhet ,
-		if "`uhet'"=="" local uhet ,
-		mata:_te_order=sfscal`dist'`epost'_te(_b_ml,"`yvar'","`wxvars2' `xvars'","`vhet'","`uhet'","`noconstant'" `endivs')
-   }	
+   Replay , `diopts'	
 
   restore
   
@@ -773,13 +778,7 @@ local lfd0 = cond("`epost'"=="","lf","d0")
       cap mata mata drop  _order_wx
 
 	} 
-
-   if(`"`te'"'!=""){
-		qui gen double `te' = .
-		label var `te' "technical efficiency"
-		mata: getdatafmata(_te_order,_order_0,"`te'")
-		cap mata mata drop  _te_order		
-   }  	
+ 	
    	if(`nummissing'>0){
 		di "Missing values found"
 		di "The regression sample recorded by variable __e_sample__"
@@ -860,7 +859,7 @@ if ("`time'"==""){
     qui keep `varlist' `wxvars' `id' `time' `uhetvars' `touse' `muvars' `vhetvars' `iv' `endvars'
     tempvar order0
     qui gen int `order0' =_n
-// sort 数据	
+// sort data	
 	qui issorted `time' `id'	
 	//tempvar time2
 
@@ -974,8 +973,6 @@ else{
 	
 	
 	if("`initial'"=="" & "`delve'"!="") { 
-		//di "`noconstant'"
-		//qui sfpanel `yvar' `xvars' `wxvars2',`noconstant' m(bc95) usigma(`uhet') vsigma(`vhet') emean(`wmuvars2' `mu') iterate(50) `cns'
 		ml model lf sfscal`dist'() (`yvar'=  `wxvars2' `xvars', `noconstant') (`vhet') (`uhet') `mu',  `cns'
 		qui ml search
 		qui ml max, iterate(50) difficult
@@ -996,8 +993,8 @@ else{
 
 
 	
-	//local modeltype = cond("`wxvars'"=="","y-SAR","yx-SAR")
-	local title Spatial frontier model(SPSF_scaling)
+//local modeltype = cond("`wxvars'"=="","y-SAR","yx-SAR")
+local title Spatial frontier model(SPSF_scaling)
 local lnsigv lnsigv
 if (`"`endvars'"'!="") local lnsigv lnsigw
 //mata mata describe
@@ -1022,6 +1019,7 @@ if (`"`endvars'"'!="") local lnsigv lnsigw
    local mlmaxopt: list uniq mlmaxopt   
    `nolog' ml max, `mlmaxopt' 
 
+   ereturn local spatialwvars Wy_`yvar' `sendoutvar'
    ereturn local cmd spsfe
    ereturn local cmdbase ml
    ereturn local cmdline `cmdline'
@@ -1029,30 +1027,32 @@ if (`"`endvars'"'!="") local lnsigv lnsigw
    ereturn local depvar `yvar'
    ereturn local function = cond("`cost'"!="","cost","production")
    ereturn local distribution=cond("`truncate'"=="","half normal","truncated normal") 
-   qui _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+
+   global tranparametrs
+   Replay , `diopts'
+
+     di " "
+     di in gre "Note: rho = 1/(rmin+rmin*exp(Wy:_cons))+exp(Wy:_cons)/(rmax+rmax*exp(Wy:_cons)); "
+     di in gre "      where rmin and rmax are the minimum and maximum eigenvalues of sp matrix"
+	 di " "
+     di in gre "   ---convert Wy:_cons to the original form---  "
+     di " "
+          di in smcl in gr abbrev("variable",12) _col(14) "{c |}" /*
+               */ _col(21) "Coef." _col(29) "Std. Err." _col(44) "t" /*
+               */ _col(49) "P>|t|" _col(59) "[95% Conf. Interval]"
+          di in smcl in gr "{hline 13}{c +}{hline 64}"
+		  _diparm Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))
+
    local rho = r(est)
    local rhose = r(se)
    ereturn scalar rho = `rho'
    ereturn scalar rho_se = `rhose' 
    ereturn local predict = "spsfe_p"
 
-global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rmax*exp(@)/(1+exp(@))) d(exp(@)*(($rmax-$rmin)/(1+exp(@))^2))) 
-   Replay , `diopts'
 
-
-   if(`"`te'"'!=""){
-		tempname bml
-		mat `bml' = e(b)
-		mata: _b_ml = st_matrix("`bml'")	
-	    local nx: word count `xvars' `wxvars2'
-		local nz: word count `uhet'
-		if("`noconstant'"=="") local noconstant constant
-		if "`vhet'"=="" local vhet ,
-		if "`uhet'"=="" local uhet ,
-		//important `endivs' = , "`endvars'","`iv'"
-		mata:_te_order=spsfscal`dist'`epost'_te(_b_ml,"`yvar'","`wxvars2' `xvars'","`vhet'","`uhet'","`noconstant'" `endivs')
-   }	
-
+  tempvar uuhat
+  qui spsfepost `uuhat', yvar(`yvar') d(`distribution') `cost' endvars(`endvars') rho(`rho')
+  qui genweff `uuhat', aname(w_ina) tvar(`time2') 
  /////// total marginal effect, direct and indirect marginal effects
 
  	    mata: totalemat = J(0,2,.)
@@ -1100,10 +1100,10 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
  
 
 
- if("`mex'"!="" | "`meu'"!=""){
+ if("`mex'"!="" ){
 	display _n(2) in gr "Marginal effects are reported as follows."
 	di "Note: The standard errors are estimated with the Delta method."
-    mata: totalemat =totalemat, ((totalemat[.,1]):/ totalemat[.,2]), (normal(-(totalemat[.,1]):/ totalemat[.,2]))
+    mata: totalemat =totalemat, ((totalemat[.,1]):/ totalemat[.,2]), 2*normal(-abs((totalemat[.,1]):/ totalemat[.,2]))
 	mata: st_matrix("totaleff",totalemat)
 	foreach v in `mex'{
 		local rnames `rnames' `"`v'"'
@@ -1122,7 +1122,7 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
 		dis _n in gr "Total marginal effects:"
 		matlist totaleff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 	
-		mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]),(normal(-((diremat[.,1]):/diremat[.,2])))
+		mata: diremat =diremat, ((diremat[.,1]):/diremat[.,2]),2*normal(-abs((diremat[.,1]):/diremat[.,2]))
 		mata: st_matrix("directeff",diremat)
 		mat rownames directeff = `rnames'
 		mat colnames directeff = "Coeff" "se" "z" "P"	
@@ -1130,7 +1130,7 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
 		dis _n in gr "Direct marginal effect:"
 		matlist directeff, cspec(`cf') rspec(`rf') noblank rowtitle("Variable")
 
-		mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],(normal(-((indiremat[.,1]):/indiremat[.,2])))
+		mata: indiremat =indiremat, (indiremat[.,1]):/indiremat[.,2],2*normal(-abs((indiremat[.,1]):/indiremat[.,2]))
 		mata: st_matrix("indirecteff",indiremat)		
 		mat rownames indirecteff = `rnames'
 		mat colnames indirecteff = "Coeff" "se" "z"	"P"
@@ -1149,10 +1149,17 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
   restore
 
 
-  	if ("`genwvars'"!=""){
+	if ("`genwvars'"!=""){
 		qui gen double Wy_`yvar'=.
 		mata: getdatafmata(__wy__,_order_0,"Wy_`yvar'")
 		label var Wy_`yvar'  "Wy*`yvar'"
+		qui gen double __u_sp__ = .
+		mata: getdatafmata(__u_sp__,_order_0,"__u_sp__")
+		qui gen double __dir_u_sp__ = .
+		label var __dir_u_sp__ "direct inefficiency component"
+		mata: getdatafmata(__dir_u_sp__,_order_0,"__dir_u_sp__")
+		qui gen double __indir_u_sp__ = __u_sp__ - __dir_u_sp__
+		label var _indir_u_sp__ "indirect inefficiency component"
 	}
   
   	if(`"`wxvars'"'!=""&"`genwvars'"!=""){
@@ -1165,13 +1172,7 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
       cap mata mata drop  _order_wx
 
 	}  
-
-   if(`"`te'"'!=""){
-		qui gen double `te' = .
-		label var `te' "technical efficiency"
-		mata: getdatafmata(_te_order,_order_0,"`te'")
-		cap mata mata drop  _te_order		
-   }  	
+ 	
    	if(`nummissing'>0){
 		di "Missing values found"
 		di "The regression sample recorded by variable __e_sample__"
@@ -1183,8 +1184,6 @@ global tranparametrs diparm(Wy, label("rho") prob function($rmin/(1+exp(@))+$rma
 	}	 	
    cap mata mata drop _order_0
 end
-
-
 
 
 ///////////////////////subprograms//////////////////
@@ -1231,6 +1230,27 @@ if `"`pref'"'==""{
 
 mata: genwvars("`varlist'",`aname',"`tvar'","`pref'")
 return local wxnames `wxnames'
+
+end
+
+
+cap program drop genweff
+program define genweff
+
+version 16
+
+syntax varlist, aname(name) rho(numlist) [tvar(varname)  ]
+
+if `"`tvar'"'==""{
+	tempvar tvar 
+	qui gen  byte `tavr'=1
+}
+
+if `"`pref'"'==""{
+	local pref W_
+}
+
+mata: genweff("`varlist'",`aname',`rho',"`tvar'",__dir_u_sp__=.,__u_sp__=.)
 
 end
 
@@ -1381,17 +1401,75 @@ return local varlist `varlist'
 end
 
 /////
+
 cap program drop spsfe_vparse
 program define spsfe_vparse,rclass
 
-syntax [varlist], [VERSION  *]
+syntax [varlist], [VERSION Gitee *]
 
 if("`version'"!=""){
-  return local version 0.4
+	qui findfile spsfe.ado
+	mata: vfile = cat("`r(fn)'")
+	mata: vfile = select(vfile,vfile:!="")
+	mata: vfile = usubinstr(vfile,char(9)," ",.)
+	mata: vfile = select(vfile,!ustrregexm(vfile,"^( )+$"))
+	mata: st_local("versionuse",vfile[1])
+	local versionuse = ustrregexrf("`versionuse'","^[\D]+","")
+	gettoken vers versionuse:versionuse, p(", ")
+	local versionuse `vers'	
+    return local version `vers'
+}
+if "`gitee'"!="" global gitee gitee
+
+end
+
+cap program drop checkupdate
+program define checkupdate
+local url1 https://raw.githubusercontent.com/kerrydu/sdsfe/main/ado
+local url2 https://gitee.com/kerrydu/sdsfe/raw/main/ado
+if `"$gitee"' != ""{
+	cap mata: vfile = cat(`"`url2'/`0'.ado"')
+	if _rc exit
+}
+else{
+	cap mata: vfile = cat(`"`url1'/`0'.ado"')
+	if _rc{
+		cap mata: vfile = cat(`"`url2'/`0'.ado"')
+	}
+	if _rc exit
+}
+
+
+mata: vfile = select(vfile,vfile:!="")
+mata: vfile = usubinstr(vfile,char(9)," ",.)
+mata: vfile = select(vfile,!ustrregexm(vfile,"^( )+$"))
+mata: st_local("versiongit",vfile[1])
+local versiongit = ustrregexrf("`versiongit'","^[\D]+","")
+gettoken vers versiongit:versiongit, p(", ")
+local versiongit `vers'
+
+qui findfile `0'.ado
+mata: vfile = cat("`r(fn)'")
+mata: vfile = select(vfile,vfile:!="")
+mata: vfile = usubinstr(vfile,char(9)," ",.)
+mata: vfile = select(vfile,!ustrregexm(vfile,"^( )+$"))
+mata: st_local("versionuse",vfile[1])
+local versionuse = ustrregexrf("`versionuse'","^[\D]+","")
+gettoken vers versionuse:versionuse, p(", ")
+local versionuse `vers'
+
+if("`versionuse'"!="`versiongit'"){
+	di "New version available, `versionuse' =>`versiongit'"
+	di "It can be updated by:"
+	di "  net install `0',from(`url1') replace force"
+	di "or,"
+	di "  net install `0',from(`url2') replace force"
 }
 
 
 end
+
+
 
 cap program drop repeatspw 
 
@@ -1458,6 +1536,52 @@ if `ne'>`niv'{
 	
 }
 
+
+end
+
+
+//////////////////////
+capture program drop spsfepost
+program define spsfepost
+version 16
+syntax newvarname, yvar(varname) Distribution(string) COST  rho(numlist) [endvars(varlist)]
+local cost  =cond("`cost'" == "cost", -1,1)
+if strpos("`distribution'","half")>0 local mu =0
+else local mu = _b[/mu]
+
+tempvar yhat 
+qui _predict double `yhat'  , xb
+
+tempvar  lnsigmav lnsigmau sigma2 mustar sigma2s omega corterm
+qui _predict double `lnsigmav', xb eq(#2)
+qui _predict double `lnsigmau', xb eq(#3)
+
+qui replace `yhat' =`yhat' + `rho'*Wy_`yvar'
+
+qui gen double `corterm' = 0
+foreach v in `endovars'{
+	tempvar r`v'
+	qui _predict double `r`v''  , xb eq(`v')
+	qui replace `r`v'' = (`v' - `r`v'' )
+	qui replace `corterm' = `corterm' + `r`v''*_b["/eta_`v'"]
+}
+
+
+		if "`endovars'"==""{
+			qui gen double `omega' = `yvar'-`yhat' 
+		}
+		else{
+			qui gen double `omega' = `yvar'-`yhat' - `corterm'*exp(`lnsigmav')
+		}
+			
+		qui replace `omega' = `cost'*`omega'	
+		
+		qui gen double `sigma2' = exp(2*`lnsigmav') + exp(2*`lnsigmau')
+		qui gen double `mustar' = (exp(2*`lnsigmav') *`mu' - exp(2*`lnsigmau')*`omega')/`sigma2'
+		qui gen double `sigma2s' = exp(2*`lnsigmav')* exp(2*`lnsigmau')/`sigma2'
+		
+		qui gen double `varlist' = `mustar' + sqrt(`sigma2s')*normalden(`mustar'/sqrt(`sigma2s'))/normal(`mustar'/sqrt(`sigma2s'))
+	
 
 end
 

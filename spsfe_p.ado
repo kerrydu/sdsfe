@@ -1,21 +1,40 @@
-
+*! version 0.2
 capture program drop spsfe_p
 program define spsfe_p
 version 16
 
-syntax newvarname, [xb mu Residuals  u bc jlms omega]
+syntax newvarname, [xb Residuals u su te ste omega]
+
+local spatialwvars `e(spatialwvars)'
+cap confirm var `spatialwvars'
+if _rc {
+	di as error "For the postestimation, genwvars should be specified in the last estimate"
+	exit 
+}
+
 local cost "`e(function)'"
 local cost  =cond("`cost'" == "cost", -1,1)
 local distribution = e(distribution)
 
-local te `bc' `jlms'
-local nopts: word count `xb'  `residuals'  `u' `te' `omega'
+local nopts: word count `xb'  `residuals'  `u' `te' `omega' `su' `ste'
     if `nopts' >1 {
         display "{err}only one statistic may be specified"
         exit 498
     }
 	if `nopts'==0 local xb xb
-	
+
+if "`su'"!=""{
+	qui gen `typlist' `varlist' = __u_sp__ 
+	label var `varlist'  "spatial-corrected inefficiency(u)"
+	exit	
+}  
+
+if "`ste'"!=""{
+	qui gen `typlist' `varlist' = exp(-__u_sp__)
+	label var `varlist'  "spatial-corrected efficiency"
+	exit	
+} 
+
 	local yvar = e(depvar)
 	if strpos("`distribution'","half")>0 local mu =0
 	else local mu = _b[/mu]
@@ -23,7 +42,7 @@ local nopts: word count `xb'  `residuals'  `u' `te' `omega'
     if "`xb'" != "" {
         _predict `typlist' `varlist'  , xb
 		local flagy = e(user)
-		local flagy = (strpos("`flagy'","sdsf"))
+		local flagy = (strpos("`flagy'","spsf"))
 		if `flagy'>0{
 			local rho = e(rho)
 			qui replace `varlist' =`varlist' + `rho'*Wy_`yvar'
@@ -92,18 +111,11 @@ local nopts: word count `xb'  `residuals'  `u' `te' `omega'
 			qui gen `typlist' `varlist' = `mustar' + sqrt(`sigma2s')*normalden(`mustar'/sqrt(`sigma2s'))/normal(`mustar'/sqrt(`sigma2s'))
 			label var `varlist' "Prediction of inefficiency: u"
 		}
-		if "`jlms'"!=""{
+		
+		if "`te'"!=""{
 			qui gen `typlist' `varlist' = exp(-`mustar' - sqrt(`sigma2s')*normalden(`mustar'/sqrt(`sigma2s'))/normal(`mustar'/sqrt(`sigma2s')))
-			label var `varlist' "Prediction of efficiency: JLMS estimator"
+			label var `varlist' "Prediction of efficiency: JLMS estimator"			
 		}
-		
-		if "`bc'"!=""{ 
-			
-			qui gen `typlist' `varlist'  = exp(-`mustar'+0.5*`sigma2s')*normal(`mustar'/sqrt(`sigma2s')-sqrt(`sigma2s'))/normal(`mustar'/sqrt(`sigma2s'))
-			label var `varlist' "Prediction of efficiency: BC estimator"
-		}
-		
-		
 	}
 	
 
