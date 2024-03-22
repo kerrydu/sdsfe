@@ -1,11 +1,11 @@
 {smcl}
-{cmd:help spsfe}
+{cmd:help sdsfe}{right:also see:  {help sdsfe postestimation}}
 {hline}
 
 {title:Title}
 
 {p2colset 5 13 15 2}{...}
-{p2col :{hi:spsfe} {hline 2}}Spatial stochastic frontier models with endogeneity in the style of {help spsfe##Kutlu2020:{bind:Kutlu et al. (2020)}} {p_end}
+{p2col :{hi:spsfe} {hline 2}}Spatial autoregressive stochastic frontier models with endogenous variables in the style of {help spsfe##Kultu2020:{bind:Kultu (2020)}} {p_end}
 {p2colreset}{...}
 
 
@@ -16,13 +16,13 @@
 Estimation syntax
 
 {p 8 17 2}
-{cmd:spsfe} {depvar} [{indepvars}] [{cmd:,} {it:options}]
+{cmd:sdsfe} {depvar} [{indepvars}] [{cmd:,} {it:options}]
 
 {pstd}
 Version syntax
 
 {p 8 17 2}
-{cmd:spsfe}{cmd:,} {opt ver:sion}
+{cmd:sdsfe}{cmd:,} {opt ver:sion}
 
 {pstd}
 Replay syntax
@@ -35,25 +35,21 @@ Replay syntax
 {synopthdr}
 {synoptline}
 {syntab :Data structure}
-
-{phang}
-{cmd: id({it:varname})} specifies cross-sectional id variable. 
-
-{phang}
-{cmd: time({it:varname})} specifies time variable. It must be specified for panel data. If not, the data is assumed to be cross-sectional. 
+{synopt :{cmd:id({it:varname})}}specify id variable{p_end}
+{synopt :{cmdab:t:ime}({it:varname})}specify time variable{p_end}
 
 {syntab :Frontier}
 {synopt :{opt nocons:tant}}suppress constant term{p_end}
 {synopt :{opt cost}}fit cost frontier model; default is {cmd:production}{p_end}
-{synopt :{cmd:wxvars({it:varlist})}}spatially lagged independent variables 
+{synopt :{cmd:wxvars({it:varlist})}}spatial Durbin variables 
 in the frontier function{p_end}
+
 
 {syntab : Ancillary equations}
 {synopt :{cmd:uhet(}{it:varlist} [{cmd:,} {opt nocons:tant}]{cmd:)}}
 specify explanatory
-variables for the inefficiency variance function; 
-use {opt noconstant}
-to suppress constant term{p_end}
+variables for the inefficiency variance function;
+use {opt noconstant} to suppress constant term {p_end}
 
 {synopt :{cmd:vhet({it:varlist})}}
 specify explanatory
@@ -74,6 +70,8 @@ spatial Durbin terms in the frontier{p_end}
 {synopt :{cmdab:endv:ars(}{it:varlist}{cmd:)}}specify endogeneous variables{p_end}
 {synopt :{cmd:iv(}{it:varlist}{cmd:)}}specify instrumental variables{p_end}
 {synopt :{cmdab:leaveo:ut(}{it:varlist}{cmd:)}}specify included exogenous variables to be left out{p_end}
+{synopt :{cmdab:exogv:ars(}{it:varlist}{cmd:)}}specify included exogenous variables 
+to account for endogenous variables{p_end}
 {synopt :{cmd:mlsearch(}{it:{help ml##model_options:search_options}}{cmd:)}}specify options for searching initial values{p_end}
 {synopt :{opt delve}}delve into maximization problem to find initial values{p_end}
 {synopt :{opt mlplot}}use ml plot to find better initial values{p_end}
@@ -84,28 +82,27 @@ spatial Durbin terms in the frontier{p_end}
 {syntab :Reporting}
 {synopt :{cmd:nolog}}omit the display of the criterion function iteration log{p_end}
 {synopt :{cmd:mex({it:varlist})}}reports marginal effects of variables in the frontier{p_end}
+{synopt :{cmd:meu({it:varlist})}}reports marginal effects of variables in the inefficiency{p_end}
 {synopt :{cmdab:mldis:play(}{it:{help ml##display_options:display_options}}{cmd:)}}control {cmd:ml display} options; seldom used{p_end}
 {synopt :{cmd:te(}{it:{help newvar:effvar}}{cmd:)}}create efficiency variables{p_end}
-{synopt :{opt genwxvars}}generate the spatial Durbin terms in the frontier function{p_end}
+{synopt :{opt genwxvars}}generate the spatial Durbin and spatial lag terms{p_end}
 
 {syntab :Other}
 {synopt :{cmdab:constraints(}{it:{help estimation options##constraints():constraints}}{cmd:)}}apply specified linear constraints{p_end}
 {synoptline}
 {p2colreset}{...}
 {p 4 6 2}
-See {help spsfe postestimation} for
+See {help sdsfe postestimation} for
 features available after estimation.{p_end}
-
-
 
 {marker description}{...}
 {title:Description}
 
 {pstd}
-{opt spsfe} fits spatial stochastic production or cost frontier models
+{opt sdsfe} fits spatial Durbin stochastic production or cost frontier models
 following the methodology of 
-{help spsfe##Kutlu2020:{bind:Kutlu et al. (2020)}}. See 
-{help spsfe##Kutlu2020:{bind:Kutlu et al. (2020)}} for a detailed
+{help sdsfe##Galli2023:{bind:Galli (2023)}}. See 
+{help sdsfe##Galli2023:{bind:Galli (2023)}} for a detailed
 explanation of the methodology and empirical analyses.
 
 
@@ -130,21 +127,29 @@ explanation of the methodology and empirical analyses.
 default is {cmd:production}.
 
 {phang}
-{cmd: wxvars({it:varlist})} specifies spatially lagged independent variables in the frontier function.
+{cmd: wxvars({it:varlist})} specifies spatial Durbin variables in the frontier function.
+
+{dlgtab:Ineffciency}
+
+{phang}
+{opt mu(varlist [,noconstant])}specifies explanatory variables in the inefficiency mean function. 
+
+{phang}
+{opt wmuvars(varlist)}specifies variables with efficiency spillovers in the inefficiency mean function. 
 
 
 {dlgtab:Ancillary equations}
 
 {phang}{cmd:uhet(}{it:varlist}[{cmd:,} {cmd:noconstant}]{cmd:)}
 specifies that the technical inefficiency component is heteroskedastic,
-with the variance expressed as a function of the covariates 
-defined in {it:varlist}. Specifying {cmd:noconstant} suppresses 
+with the variance expressed as a function of the covariates defined in
+{it:varlist}. Specifying {cmd:noconstant} suppresses 
 the constant in this function.
 
 {phang}{cmd:vhet(}{it:varlist}{cmd:)}
 specifies that the idiosyncratic error component is heteroskedastic,
 with the variance expressed as a function of the covariates defined in
-{it:varlist}. 
+{it:varlist}.  
 
 
 {dlgtab:Spatial weight matrix}
@@ -171,6 +176,8 @@ for the Spatial lag of the independent variable.
 {opt wxmat(W1 [W2 ... WT][,mata array])} specifies that the spatial weight matrices 
 for the Spatial Durbin terms in the frontier function. 
 
+{phang}
+{opt wumat(W1 [W2 ... WT][,mata array])} specifies that the spatial weight matrices for variables specified in wmuvars(). If wumat() is not specified, spatial weight matrices in wmat() are used. 
 
 
 {phang}
@@ -191,12 +198,17 @@ the initial value matrix.
 assumed to be exogenous.
 
 {phang}
-{cmd:iv(}{it:varlist}{cmd:)} specifies that the variables in ivarlist 
+{cmd:iv(}{it:varlist}{cmd:)} specifies that the variables  
 are to be used as instrumental variables to handle endogeneity.
 
 {phang}
 {cmd:leaveout(}{it:varlist}{cmd:)} specifies that the variables are to be taken
 out of the default iv list.
+
+{phang}
+{cmd:exogvars(}{it:varlist}{cmd:)} specifies that the variables  
+are to be used as exogenous variables to account for endogeneous variables.
+if exogvars() is specified, iv() and leaveout() are ignored.
 
 {phang}
 {cmd:mlsearch(}{it:{help ml##model_options:search_options}}{cmd:)} specifies ml search options for searching initial values.
@@ -215,6 +227,10 @@ initial values. The default is to use {helpb ml search:ml search} with default o
 {phang}
 {cmd:mlmax({it:{help ml##ml_max_descript:maximize_options}})} controls the
 {cmd:ml max} options; it is seldom used.
+
+{phang}
+{cmd:lndetmc({it:numlist})} settings for BarryPace Trick to solve the inverse of (I−ρW). 
+Order is iterations, maxorder. lndetmc(50 100) is recommended.
 
 {phang}
 {opt delmissing} deletes the units with missing observations from spmatrix.
@@ -238,19 +254,19 @@ marginal effects of variables in the inefficiency function.
 
 {phang}
 {cmd:te(}{it:{help newvar:effvar}}{cmd:)} generates
-the production or cost efficiency variable.
+the production or cost efficiency variable via exp(-E[u|e]).
 
 {phang}
-{cmd:genwxvars} generates the spatial Durbin terms. 
-The option automatically extends any specified variable name in wxvars() 
-with Wx_ prefix.
+{cmd:genwvars} generates the spatial Durbin and spatial lag terms in
+the specified model. It is required for the postestimation 
+when spatial dependence is included.
 
 
 {marker optionsversion}{...}
 {title:Options for the version and replay syntax}
 
 {phang}
-{cmd:version} displays the version of {cmd:spsfe} installed on Stata and the
+{cmd:version} displays the version of {cmd:sdsfe} installed on Stata and the
 program author information.  This option can be used only in version syntax.
 
 {phang}
@@ -270,29 +286,61 @@ specifies linear constraints for the estimated model.
     {marker examples}{...}
     {title:Examples}
     
-        {title:SP-SF model with time-constant spatial weight matrix}
+        {title:SD-SF model with time-constant spatial weight matrix}
     
     {pstd}
     Setup{p_end}
     {phang2}{bf:. {stata "mata mata matuse w_ex1,replace"}}{p_end}
-    {phang2}{bf:. {stata "use spsfe1.dta"}}{p_end}
+    {phang2}{bf:. {stata "use sdsfbc_ex1.dta"}}{p_end}
     
     {pstd}
-    Stochastic Stoch. production model {p_end}
-    {phang2}{bf:. {stata "spsfe y x,  uhet(z) noconstant  id(id) time(t)"}}{p_end}
+    Stochastic Durbin production model {p_end}
+    {phang2}{bf:. {stata "sdsfe y x, id(id) time(t) noconstant wymat(wm,mata) wxmat(wm,mata) wumat(wm,mata) mu(z) wxvars(x) wmuvars(z) "}}{p_end}
+    {pstd}
+    In the above case, Wy=Wx=Wu, it is equilvalent to use wmat() option as follows. {p_end}
+    {phang2}{bf:. {stata "sdsfe y x, id(id) time(t) noconstant wmat(wm,mata) mu(z) wxvars(x) wmuvars(z) "}}{p_end}
     
+    
+        {title:SD-SF model with time-constant spatial weight matrix and unblanced panel}
+    
+    {pstd}
+    Setup{p_end}
+    {phang2}{bf:. {stata "mata mata matuse w_ex1,replace"}}{p_end}
+    {phang2}{bf:. {stata "use sdsfbc_ex1.dta"}}{p_end}
+    {phang2}{bf:. {stata "drop in 1"}}{p_end}
+    {phang2}{bf:. {stata "xtset id t"}}{p_end}
+    {phang2}{bf:. {stata "tsfill, full"}}{p_end}
+    
+    {pstd}
+    Stochastic Durbin production model {p_end}
+    {phang2}{bf:. {stata "sdsfe y x,id(id) time(t) noconstant wmat(wm,mata) mu(z) wxvars(x) wmuvars(z) delmissing"}}{p_end}
+    
+    
+        {title:SD-SF model with time-varying spatial weight matrixs}
+    
+    {pstd}
+    Setup{p_end}
+    {phang2}{bf:. {stata "mata mata matuse w_ex2,replace"}}{p_end}
+    {phang2}{bf:. {stata "use sdsfbc_ex2.dta"}}{p_end}
+    {phang2}{bf:. {stata "local w w1 w2 w3 w4 w5 w6 w7 w8 w9 w10"}}{p_end}
+    
+    {pstd}
+    Stochastic cost model. {p_end}
+    {phang2}{bf:. {stata "sdsfe y x, id(id) time(t) cost noconstant wmat(`w',mata) mu(z) wxvars(x) wmuvars(z) mex(x) meu(z) "}}{p_end}
     
    
-       {title:SP-SF model with endogeneous variables}
+    {title:SD-SF model with endogeneous variables}
 
-    {pstd}
-    Setup{p_end}
-    {phang2}{bf:. {stata "mata mata matuse w_ex1,replace"}}{p_end}
-    {phang2}{bf:. {stata "use spsfe2.dta"}}{p_end}
+{pstd}
+Setup{p_end}
+{phang2}{bf:. {stata "mata mata matuse w_ex1,replace"}}{p_end}
+{phang2}{bf:. {stata "use sdsfend_ex1.dta"}}{p_end}
 
-    {pstd}
-    Stochastic Stoch. production model {p_end}
-    {phang2}{bf:. {stata "spsfe y x, wmat(wm,mata) wxvars(x) uhet(z) noconstant endvars(x z) iv(q1 q2) id(id) time(t)"}}{p_end}
+{pstd}
+Stochastic Durbin production model {p_end}
+{phang2}{bf:. {stata "sdsfe y x,id(id) time(t) noconstant wmat(wm,mata) mu(z) wxvars(x) wmuvars(z) "}}{p_end}
+{phang2}{bf:. {stata "mat b=e(b),0.2,0.2,2,.2,1,.2,2,1"}}{p_end}
+{phang2}{bf:. {stata "sdsfe y x,id(id) time(t)  noconstant wmat(wm,mata) mu(z) wxvars(x) wmuvars(z) endvars(x z) iv(q1 q2) init(b)"}}{p_end}
 
   
 
@@ -300,7 +348,7 @@ specifies linear constraints for the estimated model.
 {title:Stored results}
 
 {pstd}
-{cmd:spsfe} stores the following in {cmd:e()}:
+{cmd:sdsfe} stores the following in {cmd:e()}:
 
 {synoptset 20 tabbed}{...}
 {p2col 5 20 24 2: Scalars}{p_end}
@@ -343,10 +391,6 @@ specifies linear constraints for the estimated model.
 {synopt:{cmd:e(gradient)}}gradient vector{p_end}
 {synopt:{cmd:e(V)}}variance-covariance matrix of the estimators{p_end}
 
-{synoptset 20 tabbed}{...}
-{p2col 5 20 24 2: Functions}{p_end}
-{synopt:{cmd:e(sample)}}marks estimation sample{p_end}
-{p2colreset}{...}
 
 {marker acknowledgments}{...}
 {title:Acknowledgments}
@@ -360,12 +404,12 @@ Kerui Du acknowledges financial support from the National Natural Science Founda
 {title:Disclaimer}
 
 {pstd}
-{cmd:spsfe} is not an official Stata command.  It is a third-party command
+{cmd:sdsfe} is not an official Stata command.  It is a third-party command
 programmed as a free contribution
 to the research society.  By choosing to download, install, and use the
-{cmd:spsfe} package, users assume all the liability for any
-{cmd:spsfe}-package-related risk.  If you encounter any problems with the
-{cmd:spsfe} package, or if you have comments, suggestions, or questions, please
+{cmd:sdsfe} package, users assume all the liability for any
+{cmd:sdsfe}-package-related risk.  If you encounter any problems with the
+{cmd:sdsfe} package, or if you have comments, suggestions, or questions, please
 send an email to Kerui Du at 
 {browse "mailto:kerrydu@xmu.edu.cn":kerrydu@xmu.edu.cn}.
 
@@ -373,11 +417,11 @@ send an email to Kerui Du at
 {marker citation}{...}
 {title:References}
 
-{marker Kutlu2020}{...}
-{phang}Kutlu, Levent, Kien C. Tran, and Mike G. Tsionas (2020).
- “A Spatial Stochastic Frontier Model with Endogenous Frontier and Environmental Variables.”  European Journal of Operational Research,
-286, 1: 389–99. https://doi.org/10.1016/j.ejor.2020.03.020.
-
+{marker Galli2023}{...}
+{phang}Federica Galli, A spatial stochastic frontier model introducing inefficiency spillovers, 
+Journal of the Royal Statistical Society Series C: Applied Statistics, 
+Volume 72, Issue 2, May 2023, Pages 346–367, 
+https://doi.org/10.1093/jrsssc/qlad012
 
 
 
@@ -400,9 +444,15 @@ Italy{break}
 {browse "federica.galli14@unibo.it":federica.galli14@unibo.it}{break}
 
 
+{pstd}
+Luojia Wang{break}
+Xiamen University{break}
+School of Management{break}
+China{break}
+
 {marker see}{...}
 {title:Also see}
 
 {p 7 14 2}{manhelp frontier R}, 
 {manhelp xtfrontier XT}{p_end} 
-{p 7 14 2}{helpb sfpanel}, {helpb sfkk},  {helpb nwxtregress} (if installed)
+{p 7 14 2}{helpb sdsfe_postestimation} {helpb sfpanel}, {helpb sfkk},  {helpb nwxtregress} (if installed)

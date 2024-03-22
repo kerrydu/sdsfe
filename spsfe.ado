@@ -288,6 +288,7 @@ if "`time'"==""{
 	}
  qui genwvars `yvar', aname(w_ina) tvar(`time2') pref(__W_y_)   
  mata: __wy__ = st_data(.,"__W_y_`yvar'","`touse'")	
+ qui gen double Wy_`yvar'=__W_y_`yvar'
 ************
 
     //di "`cost'"
@@ -409,12 +410,14 @@ foreach v in `wuvars'{
    local rhose = r(se)
    ereturn scalar rho = `rho'
    ereturn scalar rho_se = `rhose' 
-   ereturn local predict = "spsfe_p"  
-  
+   ereturn local predict = "spsfe_p" 
+  //local cond("`cost'"!="","cost","production") 
+  local distribution=cond("`truncate'"=="","half normal","truncated normal") 
   tempvar uuhat
+  if "`genwvars'"!=""{
   qui spsfepost `uuhat', yvar(`yvar') d(`distribution') `cost' endvars(`endvars') rho(`rho')
-  qui genweff `uuhat', aname(w_ina) tvar(`time2') 
-
+  qui genweff `uuhat', aname(w_ina) tvar(`time2') rho(`rho')
+  }
 /*
    if(`"`te'"'!=""){
 		tempname bml
@@ -529,7 +532,7 @@ foreach v in `wuvars'{
 		label var __dir_u_sp__ "direct inefficiency component"
 		mata: getdatafmata(__dir_u_sp__,_order_0,"__dir_u_sp__")
 		qui gen double __indir_u_sp__ = __u_sp__ - __dir_u_sp__
-		label var _indir_u_sp__ "indirect inefficiency component"
+		label var __indir_u_sp__ "indirect inefficiency component"
 	}
 
   	if(`"`wxvars'"'!=""&"`genwvars'"!=""){
@@ -743,7 +746,7 @@ local lnsigv lnsigv
 if (`"`endvars'"'!="") local lnsigv lnsigw
 local lfd0 = cond("`epost'"=="","lf","d0")
 //mata mata describe
-	ml model `lfd0' sfscal`dist'`epost'() (`yvar'= `wxvars2' `xvars', `noconstant') ///
+	ml model `lfd0' sfscal`dist'`epost'() (frontier: `yvar'= `wxvars2' `xvars', `noconstant') ///
 	 (`lnsigv': `vhet') (lnsigu: `uhet') `mu' `etaterm' `surterm', nopreserve `cns' `mlmodelopt' title(`title')
 
 	if("`initial'"=="" & "`delve'"!="") { 
@@ -933,6 +936,7 @@ if ("`time'"==""){
 
 qui genwvars `yvar', aname(w_ina) tvar(`time2') pref(__W_y_)
 mata: __wy__ = st_data(.,"__W_y_`yvar'","`touse'")	
+qui gen double Wy_`yvar'=__W_y_`yvar'
 *****************
 	
 	
@@ -1049,10 +1053,13 @@ if (`"`endvars'"'!="") local lnsigv lnsigw
    ereturn scalar rho_se = `rhose' 
    ereturn local predict = "spsfe_p"
 
-
+ //local cond("`cost'"!="","cost","production")
+ local distribution=cond("`truncate'"=="","half normal","truncated normal") 
   tempvar uuhat
+  if "`genwvars'"!=""{
   qui spsfepost `uuhat', yvar(`yvar') d(`distribution') `cost' endvars(`endvars') rho(`rho')
-  qui genweff `uuhat', aname(w_ina) tvar(`time2') 
+  qui genweff `uuhat', aname(w_ina) tvar(`time2') rho(`rho')
+  }
  /////// total marginal effect, direct and indirect marginal effects
 
  	    mata: totalemat = J(0,2,.)
@@ -1159,7 +1166,7 @@ if (`"`endvars'"'!="") local lnsigv lnsigw
 		label var __dir_u_sp__ "direct inefficiency component"
 		mata: getdatafmata(__dir_u_sp__,_order_0,"__dir_u_sp__")
 		qui gen double __indir_u_sp__ = __u_sp__ - __dir_u_sp__
-		label var _indir_u_sp__ "indirect inefficiency component"
+		label var __indir_u_sp__ "indirect inefficiency component"
 	}
   
   	if(`"`wxvars'"'!=""&"`genwvars'"!=""){
@@ -1249,8 +1256,9 @@ if `"`tvar'"'==""{
 if `"`pref'"'==""{
 	local pref W_
 }
-
-mata: genweff("`varlist'",`aname',`rho',"`tvar'",__dir_u_sp__=.,__u_sp__=.)
+mata:__dir_u_sp__=.
+mata:__u_sp__=.
+mata: genweff("`varlist'",`aname',`rho',"`tvar'",__dir_u_sp__,__u_sp__)
 
 end
 
@@ -1544,8 +1552,8 @@ end
 capture program drop spsfepost
 program define spsfepost
 version 16
-syntax newvarname, yvar(varname) Distribution(string) COST  rho(numlist) [endvars(varlist)]
-local cost  =cond("`cost'" == "cost", -1,1)
+syntax newvarname, yvar(varname) Distribution(string)  rho(numlist) [COST endvars(varlist)]
+local cost  =cond("`cost'" != "", -1,1)
 if strpos("`distribution'","half")>0 local mu =0
 else local mu = _b[/mu]
 
@@ -1585,4 +1593,61 @@ foreach v in `endovars'{
 
 end
 
+cap mata mata drop genweff()
+mata:
 
+
+/// 16Mar2024
+
+
+void function genweff(string scalar vars, transmorphic matrix arr, ///
+                      real scalar rho, string scalar tvar, ///
+					  real colvector usp, real colvector dirusp)
+{
+	
+	//xnames = tokens(vars)
+	//ixnames = xnames
+	data = st_data(.,vars)
+	dirdata = J(rows(data),cols(data),.)
+	t = st_data(.,tvar)
+	uniqt = uniqrows(t)
+	keys = sort(asarray_keys(arr),1)
+	//keys
+	for(i=1;i<=cols(data);i++){ // cols(data)==1
+		for(j=1;j<=length(uniqt);j++){
+			ind=mm_which(t:==j)
+			if(length(keys)>1){
+				//rows(extrpoi(asarray(arr,j)))
+				//matinv(I(N)-rho*w)
+				wj = extrpoi(asarray(arr,j))
+				iwj = matinv(I(rows(wj))-rho*wj)
+				data[ind,i]=iwj*data[ind,i]
+				dirdata[ind,i]=diag( diagonal(iwj))*data[ind,i]
+			}
+			else{
+				wj = extrpoi(asarray(arr,keys[1]))
+				iwj = matinv(I(rows(wj))-rho*wj)
+				data[ind,i]=iwj*data[ind,i]
+				dirdata[ind,i]=diag( diagonal(iwj))*data[ind,i]
+			}
+			
+		}
+		/*
+		xnames[i] = prefix + xnames[i] 
+		xxx=st_addvar("double",xnames[i] )
+		st_store(.,xxx,data[.,i])
+		ixnames[i] = prefix+"_i_"+ xnames[i] 
+		xxx=st_addvar("double",ixnames[i] )
+		st_store(.,xxx,dirdata[.,i])
+		*/
+
+	}
+	/*
+	xnames = xnames,ixnames
+	st_local("wxnames",invtokens(xnames))
+	*/
+	usp = data 
+	dirusp = dirdata
+}
+
+end

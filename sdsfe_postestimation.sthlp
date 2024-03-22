@@ -79,7 +79,7 @@ INCLUDE help menu_predict
 
 {title:Remarks}
 
-{pstd} For the postestimation, the option {cmd:genwxvars} should be specified in {cmd:sdsfe} when estimating the models with spatial dependence. When the {cmd:sdsfe} command is used to estimate 
+{pstd} For the postestimation, the option {cmd:genwvars} should be specified in {cmd:sdsfe} when estimating the models with spatial dependence. When the {cmd:sdsfe} command is used to estimate 
 production frontiers, {cmd:predict} will provide the post-estimation of technical (in)efficiency, 
 while when the {cmd:sdsfe} command is used to estimate cost frontiers, {cmd:predict} will provide the post-estimation of cost (in)efficiency. 
 It is worth noting that {cmd:sdsfe} and the related {cmd:predict} command follow the definitions of technical and cost (in)efficiency given in Kumbhakar and Lovell (2000).{p_end}
